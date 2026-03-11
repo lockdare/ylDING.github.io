@@ -253,6 +253,49 @@
       font-size: 0.75rem;
       font-weight: 500;
     }
+    /* --- 新增：链接按钮样式 (核心补充部分) --- */
+    .project-links {
+        display: flex;
+        gap: 1rem;
+        margin-top: auto; /* 确保按钮在内容底部对齐 */
+    }
+    
+    .project-link-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+    
+    /* 主按钮样式 (如 GitHub 链接) */
+    .project-link-btn {
+        background-color: #24292f; /* GitHub 黑 */
+        color: #ffffff;
+    }
+    
+    .project-link-btn:hover {
+        background-color: #424a53;
+        transform: translateY(-1px);
+    }
+    
+    /* 次要按钮样式 (如 Demo 链接) */
+    .project-link-btn.secondary {
+        background-color: transparent;
+        border-color: #d1d5db;
+        color: #374151;
+    }
+    
+    .project-link-btn.secondary:hover {
+        background-color: #f9fafb;
+        border-color: #9ca3af;
+    }
+
     @media (max-width: 768px) {
       header { padding: 40px 0 30px; }
       header h1 { font-size: 2rem; }
@@ -301,6 +344,55 @@
             <p>Zhang, H., Ding, Y., Li, Q., Wei, X., and Zhang, J. (2025, May). Developing a Motor Learning System to Visualize the Force and Breath Control in Kung Fu: A Feasibility Study. In International Conference on Human-Computer Interaction (pp. 406-415). Springer, Cham.</p>
 
         </section>
+
+
+    <!-- 开源项目标题 -->
+        <h2 data-zh="Open Source Projects" data-en="Open Source Projects">Open Source Projects</h2>
+        
+        <div class="projects-container">
+            <!-- 单个开源项目卡片开始 -->
+            <div class="project-item">
+                <!-- 项目图片/Logo区域 (如果没有图片，可保留img标签但src设为占位图，或使用CSS隐藏) -->
+                <div class="project-image">
+                    <img src="open-source-logo.png" alt="Project Logo">
+                </div>
+                
+                <div class="project-content">
+                    <div class="project-header">
+                        <!-- 项目名称 -->
+                        <h3 class="project-title" 
+                            data-zh="卡片画布（作者）" 
+                            data-en="Card canvas（Author）">
+                            卡片画布
+                        </h3>
+                        
+                        <!-- 这里用“状态/版本”替代了原本的“时间”，更符合开源项目语境 -->
+                        <span class="project-date" 
+                              data-zh="v0.9.0" 
+                              data-en="v0.9.0">
+                              v0.9.0
+                        </span>
+                    </div>
+        
+                    <!-- 项目描述 -->
+                    <p class="project-description"
+                       data-zh="这是一个创建card形式的canvas的插件，使用者可以通过card来管理所拥有的文件资产，构建其中的逻辑关系，并能轻易通过该canvas进行文件内容的更改。"
+                       data-en="This plugin creates a card-based canvas. Users can manage their file assets via cards, build logical relationships between them, and easily modify file content directly through the canvas.">
+                       这是一个创建card形式的canvas的插件，使用者可以通过card来管理所拥有的文件资产，构建其中的逻辑关系，并能轻易通过该canvas进行文件内容的更改。
+                    </p>
+        
+        
+                    <!-- 新增：链接地址区域 (独立于描述，方便点击) -->
+                    <div class="project-links">
+                        <a href="https://github.com/lockdare/Heinibal-CardCanvas" target="_blank" class="project-link-btn" data-zh="查看代码库" data-en="View Repository">
+                            查看代码库
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- 单个开源项目卡片结束 -->
+
+        </div>
 
         <section>
             <h2 data-zh="Research Projects" data-en="Research Projects">Research Projects</h2>
