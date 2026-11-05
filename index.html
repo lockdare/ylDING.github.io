@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maxwell DING · PhD student in ECE, HKUST</title>
+<meta name="description" content="Maxwell DING — PhD student in ECE, HKUST.">
+<meta name="theme-color" content="#121A24">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23121A24'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%23EDE3CE'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#121A24; --panel:#1A2633; --surface:#202E3C;
+  --ink:#EDE3CE; --muted:#B9C4CE; --faint:#96A6B4;
+  --line:#5C7186; --accent:#E08A4B; --on-accent:#121A24;
+  --label:#C8D2DA; --orbit:#6E8396;
+  --sun-bg:#1A2633; --accent-soft:rgba(224,138,75,.14);
+  --glow:rgba(76,127,168,.30);
+  --grad:linear-gradient(100deg,#EDE3CE 0%,#E08A4B 52%,#6E9BC9 100%);
+  --planet-open:#6E9BC9; --planet-research:#D08A5C; --planet-other:#9EBFAE;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Georgia,"Noto Serif CJK SC","Songti SC",serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:3px}
+::selection{background:var(--accent);color:var(--on-accent)}
+[hidden]{display:none!important}
+section[id]{scroll-margin-top:40px}
+
+/* ---------- orbit view ---------- */
+#orbitView{display:none;position:relative;height:100vh;overflow:hidden}
+body.orbit-active #orbitView{display:block}
+#stage{position:relative;z-index:1;width:100%;height:100%;display:block}
+.sky{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.orbit-line{fill:none;stroke:var(--orbit);stroke-width:.8;vector-effect:non-scaling-stroke;stroke-opacity:.7;transition:stroke-opacity .25s ease,stroke .25s ease}
+#orbits.has-focus .orbit-line{stroke-opacity:.18}
+#orbits.has-focus .orbit-line.is-active{stroke-opacity:1;stroke:var(--accent)}
+
+/* staggered entrance: JS-driven, so no-JS keeps everything visible */
+body.js .enter-op{opacity:0;transition:opacity .6s ease-out var(--d,0s)}
+body.js .enter-up,body.js .view-enter{opacity:0;transform:translateY(14px);transition:opacity .6s ease-out var(--d,0s),transform .6s cubic-bezier(.22,.61,.36,1) var(--d,0s)}
+body.js .enter-on{opacity:1}
+body.js .enter-up.enter-on,body.js .view-enter.enter-on{transform:none}
+.planet{cursor:pointer}
+/* focus ring: stroke the planet itself (outline would box the whole <g>, which includes flying particles) */
+.planet:focus-visible,.sun:focus-visible{outline:none}
+.planet:focus-visible .pbody{stroke:var(--ink);stroke-width:2.5}
+.sun:focus-visible .sun-bg{stroke:var(--ink);stroke-width:2.5}
+.planet .pbody{fill:var(--ink);transition:fill .2s ease}
+.planet.g-open .pbody{fill:var(--planet-open)}
+.planet.g-research .pbody{fill:var(--planet-research)}
+.planet.g-other .pbody{fill:var(--planet-other)}
+.planet.show-label .pbody,.planet.is-open .pbody{fill:var(--accent)}
+.planet .pnum{fill:var(--on-accent);font-family:var(--sans);font-weight:500;text-anchor:middle;dominant-baseline:central;pointer-events:none;user-select:none}
+.planet .phit{fill:transparent;pointer-events:all}
+.planet .pbg{fill:var(--panel);opacity:0;visibility:hidden;pointer-events:all}
+.planet .pname{fill:var(--label);font-family:var(--sans);font-weight:500;dominant-baseline:central;opacity:0;visibility:hidden}
+/* name plate is driven by JS (.show-label), never by sticky :hover/:focus/:is-open */
+.planet.show-label .pbg,.planet.show-label .pname{opacity:1;visibility:visible}
+.planet.show-label .pbg{opacity:1}
+.sun{cursor:pointer}
+.sun .sun-bg{fill:var(--sun-bg);transition:fill .2s ease}
+.sun:hover .sun-bg,.sun:focus-visible .sun-bg{fill:var(--accent)}
+.sun image{filter:grayscale(1) contrast(1.04);transition:filter .3s ease}
+.sun:hover image,.sun:focus-visible image{filter:none}
+.sun-label{fill:var(--muted);font-family:var(--sans);font-size:12px;letter-spacing:.16em;text-anchor:middle;text-transform:uppercase}
+
+.top-controls{display:none;position:absolute;top:22px;right:30px;gap:28px;z-index:20;align-items:center}
+body.orbit-active .top-controls{display:flex}
+.txt-btn{background:none;border:0;border-bottom:1px solid transparent;padding:2px 0;font-size:13px;letter-spacing:.05em;color:var(--ink);line-height:1.4}
+.txt-btn:hover,.txt-btn:focus-visible{border-bottom-color:var(--ink)}
+
+/* prominent view / motion controls, bottom-right */
+.bottom-controls{position:fixed;right:28px;bottom:26px;display:flex;gap:12px;z-index:20;align-items:center}
+.pill-btn{display:inline-flex;align-items:center;gap:9px;background:var(--panel);border:1.5px solid var(--ink);border-radius:999px;padding:11px 19px;font-size:14px;font-weight:600;line-height:1.2;letter-spacing:.02em;color:var(--ink);box-shadow:0 6px 22px rgba(0,0,0,.42);transition:transform .18s ease,box-shadow .18s ease,background .18s ease,color .18s ease}
+.pill-btn svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.pill-btn:hover,.pill-btn:focus-visible{background:var(--accent);border-color:var(--accent);color:var(--on-accent);transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.5)}
+.pill-btn:active{transform:translateY(1px);box-shadow:0 3px 12px rgba(0,0,0,.45)}
+.pill-btn .ic-play{display:none}
+.pill-btn.is-paused .ic-play{display:block}
+.pill-btn.is-paused .ic-pause{display:none}
+
+/* star-chart backdrop */
+#backdrop{pointer-events:none}
+.sun-halo{fill:url(#sunGlow)}
+.sun-dots{fill:none;stroke:var(--accent);stroke-width:1.2;stroke-dasharray:1 8;stroke-linecap:round;opacity:.22}
+.star{fill:var(--faint)}
+.star.warm{fill:var(--accent)}
+.star.bright{fill:var(--ink)}
+.spark{fill:var(--accent);opacity:.62}
+.twinkle{animation:twinkle var(--dur,4.5s) ease-in-out infinite alternate;animation-delay:var(--delay,0s)}
+@keyframes twinkle{from{opacity:var(--lo,.12)}to{opacity:var(--o,.5)}}
+body.motion-paused .twinkle,body.motion-paused .hdot,body.motion-paused .hspark{animation-play-state:paused}
+
+/* particle emission: born at the planet rim -> drifts outward -> fades away */
+.halo{opacity:.9;transition:opacity .3s ease;pointer-events:none}
+.hdot{transform-box:fill-box;transform-origin:center;fill:var(--planet-open);opacity:.7;animation:emit var(--dur,3.4s) cubic-bezier(.22,.61,.36,1) var(--delay,0s) infinite}
+@keyframes emit{
+  0%{transform:translate(var(--x0,0px),var(--y0,0px)) scale(.45);opacity:0}
+  10%{opacity:1}
+  68%{opacity:.85}
+  100%{transform:translate(var(--x1,0px),var(--y1,0px)) scale(.35);opacity:0}
+}
+.hspark{transform-box:fill-box;transform-origin:center;fill:var(--accent);opacity:.5;animation:emit var(--dur,4s) cubic-bezier(.22,.61,.36,1) var(--delay,0s) infinite}
+.planet.g-research .hdot{fill:var(--planet-research)}
+.planet.g-other .hdot{fill:var(--planet-other)}
+.planet.show-label .halo,.planet.is-open .halo{opacity:1}
+.planet.show-label .hdot,.planet.is-open .hdot{fill:var(--accent)}
+.planet.show-label .hspark,.planet.is-open .hspark{fill:var(--accent)}
+
+/* ---------- detail panel ---------- */
+.detail{position:fixed;top:50%;transform:translateY(-50%);width:min(470px,38vw);max-height:min(740px,88vh);overflow-y:auto;z-index:30;background:var(--panel);border:2px solid var(--ink);border-radius:28px;padding:0 30px 26px}
+.detail.on-left{left:3vw}
+.detail.on-right{right:3vw}
+.detail-head{position:sticky;top:0;z-index:3;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;background:var(--panel);padding:24px 0 14px}
+.detail h3{margin:0;font-family:var(--serif);font-size:31px;font-weight:600;line-height:1.22;letter-spacing:-.02em}
+.close{flex:none;width:36px;height:36px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);border-radius:50%;font-size:22px;line-height:1;color:var(--muted);padding:0}
+.close:hover,.close:focus-visible{color:var(--accent);border-color:var(--accent)}
+.detail .period{margin:10px 0 0;font-size:14px;color:var(--accent);font-variant-numeric:tabular-nums}
+.detail .tags{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 16px}
+.detail .tag{font-size:13px;padding:3px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+.detail .desc{margin:0 0 20px;font-size:15px;line-height:1.85;color:var(--muted)}
+.detail .thumb{width:100%;aspect-ratio:16/10;background:var(--surface);border-radius:6px;overflow:hidden;border:0;padding:0;display:block;cursor:zoom-in}
+.detail .thumb img{width:100%;height:100%;object-fit:cover}
+.detail .zoom{display:inline-block;margin-top:14px;font-size:14px;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.personal h3{font-size:36px}
+.personal .ident{margin:8px 0 22px;font-size:15px;color:var(--muted)}
+.personal .sub{margin:22px 0 10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.personal details{margin-top:8px}
+.personal summary{cursor:pointer;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:12px 0;border-top:1px solid var(--line);list-style:none}
+.personal summary::-webkit-details-marker{display:none}
+.personal summary::after{content:" +";color:var(--accent)}
+.personal details[open] summary::after{content:" −"}
+.personal .pub-list{margin-top:6px}
+.personal .about-lead{font-size:15px;line-height:1.9;margin:0}
+.personal .facts{margin:0;display:grid}
+.personal .fact{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:14px}
+.personal .fact dt{color:var(--faint)}
+.personal .fact dd{margin:0}
+.personal .pub-list{margin:0;padding:0;list-style:none}
+.personal .pub-item{padding:12px 0;border-top:1px solid var(--line);font-size:13px;line-height:1.7;overflow-wrap:anywhere}
+.personal .pub-item em{font-style:italic}
+.personal .pub-item a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.personal .mail{display:inline-block;margin-top:18px;font-size:15px;color:var(--accent);border-bottom:1px solid var(--accent)}
+
+/* ---------- project list modal ---------- */
+.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:20px;background:rgba(6,11,18,.72)}
+.modal-card{width:min(580px,94vw);max-height:88vh;overflow-y:auto;background:var(--panel);border:2px solid var(--ink);border-radius:24px;padding:22px 28px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:8px}
+.modal-head h2{margin:0;font-family:var(--serif);font-size:24px;font-weight:600}
+.modal-note{margin:0 0 18px;font-size:12px;color:var(--faint)}
+.list-group{margin:12px 0 4px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.list-item{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;align-items:baseline;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:9px 0;color:var(--ink)}
+.list-item:hover,.list-item:focus-visible{color:var(--accent)}
+.list-item .num{font-size:12px;color:var(--faint)}
+.list-item .nm{font-size:14px}
+.list-item .pd{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* ---------- tile view: A layout (sticky sidebar + content), night palette ---------- */
+#gridView{display:grid;grid-template-columns:270px minmax(0,1fr);gap:66px;max-width:1180px;margin:0 auto;padding:56px 40px 90px}
+body.orbit-active #gridView{display:none}
+.grid-top{display:none;position:fixed;right:28px;bottom:26px;z-index:20;margin:0}
+body.js .grid-top{display:flex}
+.side{position:sticky;top:40px;align-self:start}
+.side-photo{width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 30%;border:1px solid var(--line);border-radius:10px;box-shadow:0 20px 48px rgba(0,0,0,.4);filter:sepia(.14) saturate(1.15)}
+.side h1{margin:22px 0 4px;font-family:var(--serif);font-size:2.35rem;font-weight:600;line-height:1.12;letter-spacing:-.025em}
+.side .ident{margin:0;font-size:14px;color:var(--muted)}
+.side .mail{margin:16px 0 0;display:inline-block;font-size:12px;color:var(--accent);border-bottom:1px solid var(--accent)}
+.side .mail:hover{color:var(--ink);border-color:var(--ink)}
+.side nav{display:flex;flex-direction:column;gap:3px;margin-top:26px;border-top:1px solid var(--line);padding-top:14px}
+.side nav a{font-size:13px;color:var(--muted)}
+.side nav a:hover,.side nav a:focus-visible{color:var(--accent)}
+.gsection{padding-bottom:52px;margin-bottom:52px;border-bottom:1px solid var(--line)}
+.gsection:last-of-type{border-bottom:0;margin-bottom:0}
+.ghead{display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:22px}
+.gnum{flex:none;padding:3px 10px;border:1px solid var(--line);border-radius:999px;background:var(--accent-soft);font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--accent)}
+.ghead h2{margin:0;font-family:var(--serif);font-size:1.9rem;font-weight:600}
+.about-lead{font-size:16px;line-height:1.85;max-width:64ch;margin:0}
+.facts{margin:24px 0 0;display:grid}
+.fact{display:grid;grid-template-columns:130px minmax(0,1fr);gap:18px;padding:13px 0;border-top:1px solid var(--line)}
+.fact dt{font-size:13px;color:var(--faint)}
+.fact dd{margin:0;font-size:14px}
+.pub-list{list-style:none;margin:0;padding:0}
+.pub-item{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;padding:16px 0;border-bottom:1px solid var(--line)}
+.pub-item:last-child{border-bottom:0}
+.pub-num{font-size:12px;color:var(--faint);padding-top:3px;font-variant-numeric:tabular-nums}
+.pub-text{margin:0;font-size:13px;line-height:1.75;overflow-wrap:anywhere}
+.pub-text em{font-style:italic}
+.pub-text a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:11px;background:var(--accent);color:var(--on-accent)}
+.gtitle{display:flex;align-items:center;gap:10px;margin:34px 0 14px;font-size:17px;font-family:var(--serif);font-weight:600}
+.gtitle::before{content:"";width:16px;height:2px;background:var(--accent)}
+.grid{display:grid;gap:18px}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-featured{grid-template-columns:1fr}
+.proj{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:transform .25s ease,box-shadow .25s ease}
+.proj:hover{transform:translateY(-4px);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.proj-media{display:block;width:100%;padding:0;border:0;background:var(--surface);aspect-ratio:3/2;overflow:hidden;cursor:zoom-in}
+.proj-media img{width:100%;height:100%;object-fit:contain;transition:transform .4s ease}
+.proj-media:hover img{transform:scale(1.04)}
+.proj-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:9px;flex:1}
+.proj-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.proj-name{margin:0;font-size:15px;font-weight:600;line-height:1.4}
+.proj-period{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
+.proj-desc{margin:0;font-size:12px;line-height:1.75;color:var(--muted)}
+.proj-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:2px}
+.proj-tags span{font-size:11px;padding:2px 9px;border:1px solid transparent;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.proj-links{margin-top:2px}
+.proj-links a{font-size:12px;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.proj-featured{display:grid;grid-template-columns:42% minmax(0,1fr)}
+.proj-featured .proj-media{aspect-ratio:auto;min-height:250px;height:100%}
+.proj-featured .proj-body{padding:22px 24px}
+.contact-mail{display:inline-block;font-size:clamp(18px,2.4vw,26px);color:var(--accent);border-bottom:1px solid var(--accent)}
+.gfooter{border-top:1px solid var(--line);padding:22px 0 0;font-size:12px;color:var(--faint);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* ---------- lightbox ---------- */
+.lightbox{position:fixed;inset:0;z-index:60;display:grid;place-items:center;gap:12px;padding:24px;background:rgba(6,11,18,.94)}
+.lightbox img{max-width:92vw;max-height:80vh;object-fit:contain;border-radius:4px}
+.lightbox figcaption{color:var(--ink);font-size:13px;text-align:center;max-width:80ch}
+.lb-close{position:absolute;top:18px;right:20px;width:40px;height:40px;border:1px solid rgba(248,243,230,.35);border-radius:50%;background:rgba(248,243,230,.1);color:var(--ink);font-size:22px;line-height:1}
+
+@media (max-width:900px){
+  #gridView{grid-template-columns:1fr;gap:28px;padding:32px 22px 70px}
+  .side{position:static;display:grid;grid-template-columns:110px minmax(0,1fr);gap:18px;align-items:start}
+  .side nav{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;gap:14px}
+  .grid-2,.grid-3,.proj-featured{grid-template-columns:1fr}
+  .proj-featured .proj-media{aspect-ratio:3/2;min-height:0}
+  .detail{width:min(440px,92vw);max-height:74vh;top:auto;bottom:14px;transform:none}
+  .detail.on-left,.detail.on-right{left:50%;right:auto;transform:translateX(-50%)}
+  .bottom-controls{position:fixed;right:14px;bottom:14px;gap:8px;transform:none;margin:0}
+  .pill-btn{padding:9px 14px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+  .grid-top{right:14px;bottom:14px}
+  body.orbit-active #orbitView{display:flex;flex-direction:column;justify-content:center;height:auto;min-height:100vh;padding-top:62px;padding-bottom:18px;overflow:visible}
+  #stage{height:auto;aspect-ratio:1000/640}
+  .top-controls{top:18px;right:18px;gap:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition-duration:.01ms!important;transition-delay:0s!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<div class="top-controls enter-up" style="--d:.30s">
+  <button type="button" class="txt-btn" id="btnList" data-en="Project list">项目列表</button>
+  <button type="button" class="txt-btn" id="btnLang">英文</button>
+</div>
+
+<!-- ============ orbit view ============ -->
+<section id="orbitView" aria-label="项目轨道视图 / Project orbit view">
+  <svg class="sky enter-op" id="sky" aria-hidden="true" style="--d:0s"></svg>
+  <svg id="stage" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet" role="group" aria-label="项目轨道视图：个人简介在中心，八个项目沿各自轨道环绕 / Interactive project orbit">
+    <defs>
+      <clipPath id="sunClip"><circle cx="520" cy="320" r="58"/></clipPath>
+      <radialGradient id="sunGlow">
+        <stop offset="0" stop-color="#E08A4B" stop-opacity=".24"/>
+        <stop offset=".45" stop-color="#4C7FA8" stop-opacity=".12"/>
+        <stop offset="1" stop-color="#121A24" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <g id="backdrop" class="enter-op" aria-hidden="true" style="--d:.06s">
+      <circle class="sun-halo" cx="520" cy="320" r="215"/>
+      <circle class="sun-dots" cx="520" cy="320" r="88"/>
+    </g>
+    <g id="orbits"></g>
+    <g id="sun" class="sun enter-op" tabindex="0" role="button" aria-label="打开个人简介 / Open profile" style="--d:.10s">
+      <circle class="sun-bg" cx="520" cy="320" r="64"/>
+      <image href="assets/profile_photo.jpg" x="462" y="262" width="116" height="116" preserveAspectRatio="xMidYMin slice" clip-path="url(#sunClip)"/>
+      <text class="sun-label" x="520" y="410">MAXWELL DING</text>
+    </g>
+    <g id="planets"></g>
+  </svg>
+  <div class="bottom-controls enter-op" style="--d:.40s">
+    <button type="button" class="pill-btn" id="btnPause" aria-label="暂停动画 / Pause motion" aria-pressed="false">
+      <svg class="ic-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3v10M10.5 3v10"/></svg>
+      <svg class="ic-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5 13 8l-8.5 5.5z"/></svg>
+      <span class="pill-label" id="pauseLabel" data-en="Pause motion">暂停动画</span>
+    </button>
+    <button type="button" class="pill-btn" id="btnGrid" aria-label="平铺显示 / Tile view">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
+      <span class="pill-label" data-en="Tile view">平铺显示</span>
+    </button>
+  </div>
+</section>
+
+<!-- ============ detail panel ============ -->
+<aside id="detail" class="detail" role="dialog" aria-label="项目详情 / Project details" hidden>
+  <div class="detail-head">
+    <h3 id="dTitle"></h3>
+    <button type="button" class="close" id="dClose" aria-label="关闭项目详情 / Close details">×</button>
+  </div>
+  <p class="period" id="dPeriod"></p>
+  <div class="tags" id="dTags"></div>
+  <p class="desc" id="dDesc"></p>
+  <button type="button" class="thumb" id="dThumb" aria-label="放大查看图片 / Zoom image"><img id="dImg" alt=""></button>
+  <a class="zoom" href="#" id="dZoom" data-en="View full image ↗">查看原图 ↗</a>
+  <div id="dPersonal" class="personal" hidden>
+    <p class="ident">PhD student in ECE, HKUST</p>
+    <div id="personalBody"></div>
+    <a class="mail" href="mailto:ylcooperation@163.com">ylcooperation@163.com</a>
+  </div>
+</aside>
+
+<!-- ============ project list ============ -->
+<div class="modal" id="listModal" role="dialog" aria-modal="true" aria-label="项目列表 / Project list" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 data-en="Project list">项目列表</h2>
+      <button type="button" class="close" id="listClose" aria-label="关闭项目列表 / Close list">×</button>
+    </div>
+    <p class="modal-note" data-en="All 8 projects, in document order.">全部 8 个项目，按文档顺序排列。</p>
+    <button type="button" class="list-item" id="listProfile"><span class="num">00</span><span class="nm" data-en="Maxwell DING · Profile">Maxwell DING · 个人简介</span><span class="pd"></span></button>
+    <button type="button" class="list-item" id="listPubs"><span class="num">↗</span><span class="nm" data-en="Publications (5)">论文与成果 (5)</span><span class="pd"></span></button>
+    <div id="listBody"></div>
+  </div>
+</div>
+
+<!-- ============ grid view ============ -->
+<main id="gridView">
+  <div class="grid-top" style="grid-column:1/-1">
+    <button type="button" class="pill-btn" id="btnOrbit" aria-label="轨道显示 / Orbit view">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><ellipse cx="8" cy="8" rx="7" ry="3.4" transform="rotate(-24 8 8)"/></svg>
+      <span class="pill-label" data-en="Orbit view">轨道显示</span>
+    </button>
+  </div>
+  <aside class="side">
+    <img class="side-photo" src="assets/profile_photo.jpg" alt="Maxwell DING 肖像照">
+    <div>
+      <h1>Maxwell DING</h1>
+      <p class="ident">PhD student in ECE, HKUST</p>
+      <a class="mail" href="mailto:ylcooperation@163.com">ylcooperation@163.com</a>
+      <nav aria-label="章节导航 / Section navigation">
+        <a href="#about">About</a>
+        <a href="#publications">Publications</a>
+        <a href="#projects">Projects</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="content">
+    <section id="about" class="gsection">
+      <div class="ghead"><span class="gnum">01</span><h2>About Me</h2></div>
+      <p class="about-lead" data-en="I work at the intersection of human-computer interaction, interactive robotics and vibrotactile perception, with hands-on experience spanning web and frontend development, embedded systems, LAN servers, and UI/UX design.">具有学科交叉背景和系统思维能力，具备网页、前端、嵌入式、局域网服务器开发经验，同时具备 UI/UX 设计能力。</p>
+      <dl class="facts">
+        <div class="fact"><dt data-en="Research direction">研究方向</dt><dd>WAM</dd></div>
+        <div class="fact"><dt data-en="Research interests">兴趣领域</dt><dd data-en="Interactive robots, embodied intelligence, computational media, affective intervention">交互式机器人、具身智能、计算媒体、情感干预</dd></div>
+        <div class="fact"><dt data-en="Hobbies">兴趣爱好</dt><dd data-en="Photography, guitar, piano, cooking, swimming, and learning (not exam prep)">摄影、吉他、钢琴、烹饪、游泳、学习（不是备考）</dd></div>
+      </dl>
+    </section>
+
+    <section id="publications" class="gsection">
+      <div class="ghead"><span class="gnum">02</span><h2>Publication and Output</h2></div>
+      <ol class="pub-list" lang="en">
+        <li class="pub-item"><span class="pub-num">01</span><p class="pub-text">Zhang, J., Ding, Y., Zhang, H., Zhang, S., Wei, X., Li, Q., &amp; Zhang, J. (2025). An experimental study on embodiment forms and interaction modes in affective robots for anxiety relief and emotional connection. <em>International Journal of Human-Computer Studies</em>, 203, 103584. <a href="https://doi.org/10.1016/j.ijhcs.2025.103584" target="_blank" rel="noopener noreferrer">https://doi.org/10.1016/j.ijhcs.2025.103584</a><span class="badge">JCR Q1 · CCF-A</span></p></li>
+        <li class="pub-item"><span class="pub-num">02</span><p class="pub-text">Zhang, J., Zhang, H., Ding, Y., and Zhang, J. (2025). Awareness of Qi: Enhancing Motor Learning of Chinese Kung Fu Through Interactive Visual Effects and Haptic Cues. <em>International Journal of Human–Computer Interaction</em>, 1–21. <a href="https://doi.org/10.1080/10447318.2025.2534829" target="_blank" rel="noopener noreferrer">https://doi.org/10.1080/10447318.2025.2534829</a><span class="badge">JCR Q1 · CCF-B</span></p></li>
+        <li class="pub-item"><span class="pub-num">03</span><p class="pub-text">Ding, Y., Qian, T., Li, Q., &amp; Zhang, J. (2026). An Experiment of Interaction Effect of Age, Cognitive Ability, Skin Temperature, and Skin Thickness on Vibrotactile Sensibility of Older Adults. In Q. Gao, &amp; J. Zhou (Eds.), <em>Human Aspects of IT for the Aged Population - 12th International Conference, ITAP 2026, Held as Part of the 28th HCI International Conference, HCII 2026, Proceedings</em> (pp. 36-48). (Lecture Notes in Computer Science; Vol. 16735 LNCS). Springer Science and Business Media Deutschland GmbH. <a href="https://doi.org/10.1007/978-3-032-30421-6_3" target="_blank" rel="noopener noreferrer">https://doi.org/10.1007/978-3-032-30421-6_3</a></p></li>
+        <li class="pub-item"><span class="pub-num">04</span><p class="pub-text">Ding, Y., Zhang, H., and Zhang, J. (2025). Comparing Vibrotactile and Visual Feedback in Virtual Reality Motion Guidance: an Investigation on Workload and Performance. In <em>International Conference on Human-Computer Interaction</em> (pp. 34-45). Springer, Cham.</p></li>
+        <li class="pub-item"><span class="pub-num">05</span><p class="pub-text">Zhang, H., Ding, Y., Li, Q., Wei, X., and Zhang, J. (2025, May). Developing a Motor Learning System to Visualize the Force and Breath Control in Kung Fu: A Feasibility Study. In <em>International Conference on Human-Computer Interaction</em> (pp. 406-415). Springer, Cham.</p></li>
+      </ol>
+    </section>
+
+    <section id="projects" class="gsection">
+      <div class="ghead"><span class="gnum">03</span><h2>Projects</h2></div>
+
+      <h3 class="gtitle">Open Source Projects</h3>
+      <div class="grid grid-featured">
+        <article class="proj proj-featured" data-img="assets/open_source1.png" data-group="open">
+          <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/open_source1.png" alt="卡片画布插件界面" loading="lazy" decoding="async"></button>
+          <div class="proj-body">
+            <div class="proj-head"><h4 class="proj-name" data-en="Card Canvas (Author)">卡片画布（作者）</h4><span class="proj-period">v0.9.0</span></div>
+            <p class="proj-desc" data-en="A canvas-based file-management plugin. Users organize file assets as cards, build logical relationships between them, and edit file content directly on the canvas.">基于 canvas 形式进行文件管理的插件，使用者可以通过 card 来管理所拥有的文件资产，构建其中的逻辑关系，并能轻易通过该 canvas 进行文件内容的更改。</p>
+            <div class="proj-tags"><span data-en="Non-linear">非线性</span><span data-en="Asset management">资产管理</span></div>
+            <div class="proj-links"><a href="https://github.com/lockdare/Heinibal-CardCanvas" target="_blank" rel="noopener noreferrer" data-en="View repository ↗">查看代码库 ↗</a></div>
+          </div>
+        </article>
+      </div>
+
+      <h3 class="gtitle">Research Projects</h3>
+      <div class="grid grid-2">
+        <article class="proj" data-img="assets/rp1.jpg" data-group="research">
+          <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/rp1.jpg" alt="基于特效与振动触觉的功夫学习系统" loading="lazy" decoding="async"></button>
+          <div class="proj-body">
+            <div class="proj-head"><h4 class="proj-name" data-en="Kung Fu Motor Learning with Visual Effects and Vibrotactile Feedback">基于特效与振动触觉的功夫学习系统</h4><span class="proj-period" data-en="Jun – Oct 2024">2024.06 – 2024.10</span></div>
+            <p class="proj-desc" data-en="Haptics has become an important interaction channel alongside vision and hearing. Combining psychophysical experiments with interface prototypes, this project evaluates engagement, intuitiveness, and perceptual coherence to inform the design of smart wearables, VR/AR, and remote motor training.">触觉作为人类感知方式的重要部分，近年来成为除视觉与听觉外的又一重要交互信号。本项目采用心理物理学实验和界面原型，测试参与感、直觉性和感知连贯性，旨在帮助智能穿戴、VR/AR 和远程机能训练的创新设计。</p>
+            <div class="proj-tags"><span data-en="Multimodal">多模态</span><span data-en="Visual effects">动效</span><span data-en="Vibrotactile">振动触觉</span><span data-en="Motor learning">动作学习</span></div>
+          </div>
+        </article>
+        <article class="proj" data-img="assets/rp2.jpg" data-group="research">
+          <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/rp2.jpg" alt="心理健康与情感机器人设计" loading="lazy" decoding="async"></button>
+          <div class="proj-body">
+            <div class="proj-head"><h4 class="proj-name" data-en="Affective Robot Design for Mental Well-being">心理健康与情感机器人设计</h4><span class="proj-period" data-en="Jun – Oct 2024">2024.06 – 2024.10</span></div>
+            <p class="proj-desc" data-en="Affective robots can support mental well-being through intelligent interaction. This project studies how appearance, interaction modes, and emotional feedback shape users' mood, engagement, acceptance, and overall experience, and derives design guidelines for affective robots.">情感机器人被认为具备通过智能交互改善心理健康的能力，本项目通过研究外观、交互模式和情感反馈如何影响人的情绪、参与感、接受度和体验，提供情感机器人设计的指引方案。</p>
+            <div class="proj-tags"><span data-en="Emotional comfort">情感安抚</span><span data-en="Emotional connection">情感连接</span><span data-en="Mental health">心理健康</span><span data-en="Robotics">机器人</span></div>
+          </div>
+        </article>
+        <article class="proj" data-img="assets/rp3.jpg" data-group="research">
+          <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/rp3.jpg" alt="基于振动触觉的动作学习交互穿戴设计" loading="lazy" decoding="async"></button>
+          <div class="proj-body">
+            <div class="proj-head"><h4 class="proj-name" data-en="Wearable Vibrotactile Guidance for Motor Learning">基于振动触觉的动作学习交互穿戴设计</h4><span class="proj-period" data-en="Sep 2025 – Jun 2026">2025.09 – 2026.06</span></div>
+            <p class="proj-desc" data-en="Older adults often struggle to learn movements without professional supervision, and haptic guidance has been shown to improve both guidance effectiveness and motor memory. Building on prior work on vibrotactile perception in older adults, this study designs a wearable vibration-guidance device and its guidance scheme.">缺乏专业监督下的老年人动作学习存在困难，触觉指引被验证为能够提高动作指引效果和记忆效果，本研究基于已有老年人振动感知能力基础，设计了振动指引穿戴设备与指引方案。</p>
+            <div class="proj-tags"><span data-en="Multimodal">多模态</span><span data-en="Older adults">老年人</span><span data-en="Vibrotactile">振动触觉</span><span data-en="Motor learning">动作学习</span></div>
+          </div>
+        </article>
+        <article class="proj" data-img="assets/rp4.jpg" data-group="research">
+          <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/rp4.jpg" alt="老年人皮肤振动感知能力及识别能力研究" loading="lazy" decoding="async"></button>
+          <div class="proj-body">
+            <div class="proj-head"><h4 class="proj-name" data-en="Vibrotactile Perception and Recognition in Older Adults">老年人皮肤振动感知能力及识别能力研究</h4><span class="proj-period" data-en="Sep 2023 – Jul 2025">2023.09 – 2025.07</span></div>
+            <p class="proj-desc" data-en="Vibrotactile feedback can support motor learning and guidance for older adults, yet whole-body vibrotactile sensitivity data remain insufficient for wearable design. This study measured cutaneous vibration perception at 12 body sites under two conditions.">振动触觉被认为可以帮助老年人进行动作学习或指引等，但当前针对老年人全身振动能力的研究尚不足以支撑完整振动穿戴设计，为此，本研究测量了老年人 12 部位两种状态下的皮肤振动感知能力。</p>
+            <div class="proj-tags"><span data-en="Older adults">老年人</span><span data-en="Vibrotactile">振动触觉</span><span data-en="Motor learning">动作学习</span><span data-en="Human factors">人因工程</span></div>
+          </div>
+        </article>
+      </div>
+
+      <h3 class="gtitle">Other Projects</h3>
+      <div class="grid grid-3">
+        <article class="proj" data-img="assets/op1.png" data-group="other">
+          <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/op1.png" alt="基于激励理论的应用系统设计开发" loading="lazy" decoding="async"></button>
+          <div class="proj-body">
+            <div class="proj-head"><h4 class="proj-name" data-en="Application Design Based on Motivation Theory">基于激励理论的应用系统设计开发</h4><span class="proj-period" data-en="Oct 2024 – Jun 2025">2024.10 – 2025.06</span></div>
+            <p class="proj-desc" data-en="As reliance on smart devices grows, research has linked it to declines in physical and mental health, social relationships, academic performance, and overall well-being. This project applies motivation theory to interaction design to help users rebuild healthy habits and amplify the positive impact of their devices.">随着信息技术的发展，用户对智能设备的依赖程度越来越高，已有的研究表明，对智能设备的依赖与用户身心健康、社交关系、学习成绩和总体幸福度的下降存在相关性，本项目旨在通过激励理论的交互设计帮助用户重新建立健康的使用习惯，提高智能设备的积极影响。</p>
+            <div class="proj-tags"><span data-en="Interface design">界面设计</span><span data-en="Motivation theory">激励理论</span><span data-en="Mobile app">移动应用</span></div>
+          </div>
+        </article>
+        <article class="proj" data-img="assets/op2.jpg" data-group="other">
+          <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/op2.jpg" alt="AI 驱动的皮肤保护与化妆辅助" loading="lazy" decoding="async"></button>
+          <div class="proj-body">
+            <div class="proj-head"><h4 class="proj-name" data-en="AI-driven Skin Protection and Makeup Assistance">AI 驱动的皮肤保护与化妆辅助</h4><span class="proj-period" data-en="Jul – Aug 2025">2025.07 – 2025.08</span></div>
+            <p class="proj-desc" data-en="With rising attention to appearance across cosmetics, skincare, and medical aesthetics, user research surfaced two pain points: the limits of current skin-analysis devices and the difficulty beginners face with makeup. The project combines multiple models with a multispectral camera for more accurate skin detection and makeup assistance.">随着生活水平的提高，人们对外貌的关注程度也日益提高，外貌相关行业包含美妆、护理和医美等主要领域。用户调研之后，我们主要针对当前皮肤检测设备和新手化妆困难等问题成立了本项目，旨在通过多模型结合 + 多光谱镜头实现更精准的皮肤检测和化妆辅助。</p>
+            <div class="proj-tags"><span data-en="UI design">UI 设计</span><span data-en="Frontend">前端开发</span><span data-en="Embedded systems">嵌入式</span><span data-en="Face recognition">面部识别</span><span data-en="Generative models">生成式模型</span><span data-en="LLMs">大语言模型</span></div>
+          </div>
+        </article>
+        <article class="proj" data-img="assets/op3.jpg" data-group="other">
+          <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/op3.jpg" alt="便携式陪伴机器人设计开发" loading="lazy" decoding="async"></button>
+          <div class="proj-body">
+            <div class="proj-head"><h4 class="proj-name" data-en="Portable Companion Robot">便携式陪伴机器人设计开发</h4><span class="proj-period" data-en="Mar – Jun 2024">2024.03 – 2024.06</span></div>
+            <p class="proj-desc" data-en="Loneliness among young adults is rising, and pet ownership is a common coping strategy — but its cost puts it out of reach for many. Prior work shows interactive robots can alleviate loneliness, especially when their behavior resembles that of animals. This project designs an interactive companion robot as an accessible alternative.">社会研究显示，青年人群的孤独感逐年上升，一些青年人选择饲养宠物缓解孤独。然而由于养宠物成本较高，部分青年人无法承担，本项目试图找到一种替代方案。根据已有的研究结果，我们了解到交互式机器人具备缓解孤独的功能，并且行为模式越接近动物的机器人具有越好的孤独缓解效果，本项目旨在设计具有交互功能的机器人，帮助用户缓解孤独感。</p>
+            <div class="proj-tags"><span data-en="Embedded systems">嵌入式</span><span data-en="Robotics">机器人</span><span data-en="Multimodal">多模态</span><span data-en="Interaction design">交互设计</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="contact" class="gsection">
+      <div class="ghead"><span class="gnum">04</span><h2>Contact Me</h2></div>
+      <p data-en="Open to collaboration and consultation — feel free to get in touch.">寻求合作或咨询，欢迎联系。</p>
+      <a class="contact-mail" href="mailto:ylcooperation@163.com">ylcooperation@163.com</a>
+    </section>
+
+    <div class="gfooter"><span>© <span id="year">2026</span> Maxwell DING</span><span data-en="Orbit &amp; Tile views · plain HTML / CSS / JS">轨道 / 平铺视图 · 纯 HTML / CSS / JS</span></div>
+  </div>
+</main>
+
+<figure class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="图片预览 / Image preview" hidden>
+  <button type="button" class="lb-close" id="lbClose" aria-label="关闭 / Close">×</button>
+  <img id="lbImg" alt="">
+  <figcaption id="lbCap"></figcaption>
+</figure>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+  var $$ = function(s, root){ return Array.prototype.slice.call((root || document).querySelectorAll(s)); };
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.body.classList.add("js");
+  var PS = window.innerWidth < 760 ? 2 : 1;
+  var liteMotion = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || window.innerWidth < 760;
+  function seeded(s){ return function(){ s = s + 0x6D2B79F5 | 0; var t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function sparkPath(sz){ var s = +sz, a = s*.22; return "M0 "+(-s)+" L"+a+" "+(-a)+" L"+s+" 0 L"+a+" "+a+" L0 "+s+" L"+(-a)+" "+a+" L"+(-s)+" 0 L"+(-a)+" "+(-a)+" Z"; }
+
+  /* ---------- single source of truth: read static HTML ---------- */
+  function bi(el){ return {zh:(el.textContent||"").trim(), en:el.dataset.en || (el.textContent||"").trim()}; }
+  var CARDS = $$("#gridView .proj");
+  var PROJECTS = CARDS.map(function(c,i){
+    return {
+      n: ("0"+(i+1)).slice(-2),
+      name: bi(c.querySelector(".proj-name")),
+      period: bi(c.querySelector(".proj-period")),
+      desc: bi(c.querySelector(".proj-desc")),
+      tags: $$(".proj-tags span", c).map(bi),
+      img: c.dataset.img,
+      group: c.dataset.group
+    };
+  });
+  var GROUPS = { open:"Open Source Projects", research:"Research Projects", other:"Other Projects" };
+  var GROUPS_ZH = { open:"开源项目", research:"研究项目", other:"其他项目" };
+
+  /* ---------- language ---------- */
+  var lang = "zh";
+  try { lang = localStorage.getItem("orbit-lang") || (navigator.language||"zh").toLowerCase().indexOf("zh")===0 ? "zh" : "en"; } catch(e){}
+  function T(o){ return lang === "en" ? o.en : o.zh; }
+  function renderList(){
+    var out = "", last = "";
+    PROJECTS.forEach(function(p,i){
+      if (p.group !== last){ last = p.group; out += '<p class="list-group">'+(lang==="en"?GROUPS[p.group]:GROUPS_ZH[p.group])+'</p>'; }
+      out += '<button type="button" class="list-item" data-go="'+i+'"><span class="num">'+p.n+'</span><span class="nm">'+T(p.name)+'</span><span class="pd">'+T(p.period)+'</span></button>';
+    });
+    $("#listBody").innerHTML = out;
+    $$("#listBody [data-go]").forEach(function(b){
+      b.addEventListener("click", function(){ closeList(); openProject(+b.dataset.go, true); });
+    });
+  }
+  function fillPersonal(){
+    var body = $("#personalBody");
+    var about = $("#gridView .about-lead").cloneNode(true);
+    var facts = $("#gridView .facts").cloneNode(true);
+    var pubs  = $("#gridView .pub-list").cloneNode(true);
+    var sub2 = document.createElement("p"); sub2.className="sub"; sub2.textContent = lang==="en"?"Profile":"个人简介";
+    var det = document.createElement("details");
+    var sum = document.createElement("summary");
+    sum.textContent = (lang==="en"?"Publications (":"论文与成果 (") + $$("#gridView .pub-item").length + ")";
+    det.appendChild(sum); det.appendChild(pubs);
+    [about,facts,pubs].forEach(function(n){ n.removeAttribute("data-en"); $$("[data-en]",n).forEach(function(e){ e.removeAttribute("data-en"); }); });
+    body.replaceChildren(sub2, about, facts, det);
+  }
+  function initial(p){
+    var s = ((lang === "en") ? p.name.en : p.name.zh).trim();
+    return s ? s.charAt(0).toUpperCase() : "·";
+  }
+  function layoutLabel(o, above){
+    var txt = o.name.textContent || "";
+    var fs = 14 * PS;
+    var w = txt.length * fs * (lang === "en" ? .55 : 1) + 16;
+    var ly = (above ? -1 : 1) * (o.r * PS + 20);
+    o.name.setAttribute("x", "0");
+    o.name.setAttribute("y", ly.toFixed(1));
+    o.name.setAttribute("text-anchor", "middle");
+    o.bg.setAttribute("x", (-w/2).toFixed(1));
+    o.bg.setAttribute("y", (ly - 13*PS).toFixed(1));
+    o.bg.setAttribute("height", (26*PS).toFixed(1));
+    o.bg.setAttribute("width", w.toFixed(1));
+  }
+  function applyLang(){
+    $$("[data-en]").forEach(function(el){
+      if (!el.dataset.zh) el.dataset.zh = el.textContent.trim();
+      el.textContent = lang === "en" ? el.dataset.en : el.dataset.zh;
+    });
+    document.documentElement.lang = lang === "en" ? "en" : "zh-CN";
+    $("#btnLang").textContent = lang === "en" ? "中文" : "英文";
+    $$(".planet").forEach(function(g,i){
+      g.setAttribute("aria-label", (lang==="en"?"Open project ":"打开项目 ")+PROJECTS[i].n+" · "+T(PROJECTS[i].name));
+    });
+    if (ORBITS && ORBITS[0] && ORBITS[0].num){
+      ORBITS.forEach(function(o,i){
+        o.num.textContent = initial(PROJECTS[i]);
+        o.name.textContent = T(PROJECTS[i].name);
+        o.above = null;
+      });
+      draw();
+    }
+    if (!$("#listModal").hidden) renderList();
+    if (!$("#detail").hidden) renderDetail();
+  }
+  $("#btnLang").addEventListener("click", function(){
+    lang = lang === "zh" ? "en" : "zh";
+    try { localStorage.setItem("orbit-lang", lang); } catch(e){}
+    applyLang();
+  });
+
+  /* ---------- orbit geometry ---------- */
+  var CX = 520, CY = 320;
+  var ORBITS = [
+    {rx:186, ry:112, rot:-13, dx:-16, dy:  9, sp:.00023, dir: 1, r:20, ph:0.4},
+    {rx:238, ry:142, rot: 11, dx: 14, dy:-13, sp:.00018, dir:-1, r:22, ph:1.9},
+    {rx:286, ry:168, rot:-24, dx:-21, dy:  7, sp:.00014, dir: 1, r:19, ph:3.4},
+    {rx:326, ry:194, rot: 18, dx: 19, dy: 15, sp:.000118,dir:-1, r:23, ph:5.1},
+    {rx:362, ry:214, rot: -7, dx:-11, dy:-18, sp:.00010, dir: 1, r:20, ph:0.9},
+    {rx:394, ry:230, rot: 29, dx: 23, dy: -7, sp:.000086,dir:-1, r:24, ph:2.7},
+    {rx:418, ry:240, rot:-19, dx:-18, dy: 17, sp:.000075,dir: 1, r:19, ph:4.4},
+    {rx:438, ry:246, rot:  6, dx:  9, dy: 21, sp:.000066,dir:-1, r:21, ph:5.8}
+  ];
+  var orbitsG = $("#orbits"), planetsG = $("#planets");
+
+  /* ---------- decorative star field: covers the whole orbit view ---------- */
+  var sky = $("#sky"), skyW = 0, skyH = 0, resizeTimer = 0;
+  function buildSky(){
+    var view = $("#orbitView");
+    var W = Math.max(320, view.clientWidth || window.innerWidth);
+    var H = Math.max(420, view.clientHeight || window.innerHeight);
+    skyW = W; skyH = H;
+    sky.setAttribute("viewBox","0 0 "+W+" "+H);
+    sky.setAttribute("preserveAspectRatio","none");
+    var rnd = seeded(20261105), frag = document.createDocumentFragment();
+    var count = Math.min(190, Math.max(70, Math.round(W*H/6200)));
+    var cx = W/2, cy = H/2, keep = Math.pow(Math.min(W,H)*.14, 2);
+    for (var k=0, made=0; made<count && k<8000; k++){
+      var x = rnd()*W, y = rnd()*H, dx = x-cx, dy = y-cy;
+      if (dx*dx+dy*dy < keep) continue;
+      var o = .14 + rnd()*.42, kind = rnd(), tw = made%6===0;
+      var c = document.createElementNS(SVGNS,"circle");
+      c.setAttribute("class","star"+(kind>.93?" warm":kind>.84?" bright":"")+(tw?" twinkle":""));
+      c.setAttribute("cx",x.toFixed(1)); c.setAttribute("cy",y.toFixed(1));
+      c.setAttribute("r",(.5+rnd()*1.35).toFixed(2));
+      if (tw) c.setAttribute("style","--o:"+o.toFixed(2)+";--lo:"+(o*.25).toFixed(2)+";--dur:"+(3.4+rnd()*3.2).toFixed(1)+"s;--delay:"+(rnd()*4).toFixed(1)+"s");
+      else c.setAttribute("opacity",o.toFixed(2));
+      frag.appendChild(c); made++;
+    }
+    var sparkN = Math.max(7, Math.round(count/14));
+    for (var j=0, guard=0; j<sparkN && guard<600; guard++){
+      var sx=rnd()*W, sy=rnd()*H, ddx=sx-cx, ddy=sy-cy;
+      if (ddx*ddx+ddy*ddy < keep*1.6) continue;
+      var sp = document.createElementNS(SVGNS,"path");
+      sp.setAttribute("class","spark");
+      sp.setAttribute("d",sparkPath(2.2+rnd()*2.6));
+      sp.setAttribute("transform","translate("+sx.toFixed(1)+" "+sy.toFixed(1)+")");
+      frag.appendChild(sp); j++;
+    }
+    sky.replaceChildren(frag);
+  }
+  buildSky();
+  window.addEventListener("resize", function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      var W = Math.max(320, $("#orbitView").clientWidth || window.innerWidth);
+      var H = Math.max(420, $("#orbitView").clientHeight || window.innerHeight);
+      if (Math.abs(W-skyW) > 40 || Math.abs(H-skyH) > 40) buildSky();
+    }, 220);
+  });
+
+  ORBITS.forEach(function(o,i){
+    o.cx = CX + o.dx; o.cy = CY + o.dy; o.t = o.ph;
+    var e = document.createElementNS(SVGNS,"ellipse");
+    e.setAttribute("class","orbit-line enter-op");
+    e.setAttribute("style","--d:"+(0.06+i*0.05).toFixed(2)+"s");
+    e.setAttribute("cx",o.cx); e.setAttribute("cy",o.cy);
+    e.setAttribute("rx",o.rx); e.setAttribute("ry",o.ry);
+    e.setAttribute("transform","rotate("+o.rot+" "+o.cx+" "+o.cy+")");
+    orbitsG.appendChild(e);
+    o.line = e;
+
+    var g = document.createElementNS(SVGNS,"g");
+    g.setAttribute("class","planet g-"+PROJECTS[i].group+" enter-op"); g.setAttribute("tabindex","0");
+    g.setAttribute("style","--d:"+(0.18+i*0.06).toFixed(2)+"s");
+    g.setAttribute("role","button"); g.setAttribute("data-i",i);
+
+    /* particle emission: each dot is born at the rim, drifts outward, fades away */
+    var halo = document.createElementNS(SVGNS,"g");
+    halo.setAttribute("class","halo"); halo.setAttribute("aria-hidden","true");
+    var hr = seeded(7919 + i*131);
+    var N = liteMotion ? 10 : 20;
+    for (var k=0;k<N;k++){
+      var a   = (k/N)*Math.PI*2 + (hr()-.5)*.5;
+      var r0  = o.r*PS*(1.04 + hr()*.12);
+      var r1  = r0 + (26 + hr()*52)*PS;
+      var dur = 2.6 + hr()*2.0;
+      var x0 = Math.cos(a)*r0, y0 = Math.sin(a)*r0;
+      var x1 = Math.cos(a)*r1, y1 = Math.sin(a)*r1;
+      var dot = document.createElementNS(SVGNS,"circle");
+      dot.setAttribute("class","hdot");
+      dot.setAttribute("cx","0"); dot.setAttribute("cy","0");
+      dot.setAttribute("r",((1.9+hr()*1.8)*PS).toFixed(2));
+      dot.setAttribute("transform","translate("+x0.toFixed(1)+" "+y0.toFixed(1)+")");
+      dot.setAttribute("style","--x0:"+x0.toFixed(1)+"px;--y0:"+y0.toFixed(1)+"px;--x1:"+x1.toFixed(1)+"px;--y1:"+y1.toFixed(1)+"px;--dur:"+dur.toFixed(2)+"s;--delay:"+(-(k/N)*dur - hr()*.7).toFixed(2)+"s");
+      halo.appendChild(dot);
+    }
+    for (var s2=0;s2<2;s2++){
+      var sa = hr()*Math.PI*2, sr0 = o.r*PS*1.35, sr1 = sr0 + (58+hr()*68)*PS;
+      var sx0 = Math.cos(sa)*sr0, sy0 = Math.sin(sa)*sr0;
+      var sx1 = Math.cos(sa)*sr1, sy1 = Math.sin(sa)*sr1;
+      var sdur = 3.5 + s2*1.1;
+      var spark = document.createElementNS(SVGNS,"path");
+      spark.setAttribute("class","hspark");
+      spark.setAttribute("d",sparkPath(2.6*PS));
+      spark.setAttribute("transform","translate("+sx0.toFixed(1)+" "+sy0.toFixed(1)+")");
+      spark.setAttribute("style","--x0:"+sx0.toFixed(1)+"px;--y0:"+sy0.toFixed(1)+"px;--x1:"+sx1.toFixed(1)+"px;--y1:"+sy1.toFixed(1)+"px;--dur:"+sdur.toFixed(1)+"s;--delay:"+(-(s2*1.8+hr()*1.2)).toFixed(2)+"s");
+      halo.appendChild(spark);
+    }
+    g.appendChild(halo);
+
+    var hit = document.createElementNS(SVGNS,"circle");
+    hit.setAttribute("class","phit"); hit.setAttribute("r",(o.r*PS+12).toFixed(1));
+
+    var bg = document.createElementNS(SVGNS,"rect");
+    bg.setAttribute("class","pbg"); bg.setAttribute("rx","4");
+
+    var body = document.createElementNS(SVGNS,"circle");
+    body.setAttribute("class","pbody"); body.setAttribute("r",(o.r*PS).toFixed(1));
+
+    var num = document.createElementNS(SVGNS,"text");
+    num.setAttribute("class","pnum"); num.setAttribute("font-size",(14*PS).toFixed(1));
+    num.textContent = initial(PROJECTS[i]);
+
+    var name = document.createElementNS(SVGNS,"text");
+    name.setAttribute("class","pname"); name.setAttribute("font-size",(14*PS).toFixed(1));
+    name.textContent = T(PROJECTS[i].name);
+
+    g.appendChild(hit); g.appendChild(bg); g.appendChild(body);
+    g.appendChild(num); g.appendChild(name);
+    planetsG.appendChild(g);
+    o.el = g; o.num = num; o.name = name; o.bg = bg;
+
+    g.addEventListener("pointerenter", function(){ setHover(i); });
+    g.addEventListener("pointerleave", function(){ if (hovered===i) setHover(-1); });
+    g.addEventListener("focus", function(){ setHover(i, false); });
+    g.addEventListener("blur", function(){ if (hovered===i) setHover(-1); });
+    g.addEventListener("click", function(){ openProject(i, true); });
+    g.addEventListener("keydown", function(ev){
+      if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); openProject(i, false); }
+    });
+  });
+
+  var hovered = -1, opened = -1, userPaused = false, modalPause = false, personalOpen = false;
+  var last = 0;
+  function clearLabels(){
+    ORBITS.forEach(function(o){ o.el.classList.remove("show-label"); });
+  }
+  function setHover(i, withLabel){
+    hovered = i;
+    orbitsG.classList.toggle("has-focus", i >= 0);
+    var allow = withLabel !== false && $("#detail").hidden && $("#listModal").hidden && $("#lightbox").hidden;
+    ORBITS.forEach(function(o,j){
+      o.line.classList.toggle("is-active", j === i);
+      o.el.classList.toggle("show-label", allow && j === i);
+    });
+  }
+  function pos(o){
+    var a = o.t * o.dir, rad = o.rot * Math.PI/180;
+    var px = o.rx * Math.cos(a), py = o.ry * Math.sin(a);
+    var cr = Math.cos(rad), sr = Math.sin(rad);
+    return { x: o.cx + px*cr - py*sr, y: o.cy + px*sr + py*cr };
+  }
+  function draw(){
+    ORBITS.forEach(function(o){
+      var p = pos(o);
+      o.el.setAttribute("transform","translate("+p.x.toFixed(1)+" "+p.y.toFixed(1)+")");
+      var above = p.y > CY;
+      if (o.above !== above){ o.above = above; layoutLabel(o, above); }
+    });
+  }
+  function frame(ts){
+    var dt = Math.min(ts - last, 50) || 16; last = ts;
+    var moving = !reduced && !userPaused && !modalPause && document.body.classList.contains("orbit-active");
+    if (moving){
+      ORBITS.forEach(function(o,i){
+        if (i === hovered || i === opened) return;
+        o.t += o.sp * dt;
+      });
+      draw();
+    }
+    requestAnimationFrame(frame);
+  }
+  draw(); requestAnimationFrame(frame);
+
+  function setMotionUI(paused){
+    var btn = $("#btnPause"), lab = $("#pauseLabel");
+    btn.classList.toggle("is-paused", paused);
+    btn.setAttribute("aria-pressed", paused ? "true" : "false");
+    document.body.classList.toggle("motion-paused", paused);
+    lab.textContent = paused ? (lang==="en"?"Resume motion":"恢复动画") : (lang==="en"?"Pause motion":"暂停动画");
+    lab.dataset.en = paused ? "Resume motion" : "Pause motion";
+    lab.dataset.zh = paused ? "恢复动画" : "暂停动画";
+  }
+  $("#btnPause").addEventListener("click", function(){
+    userPaused = !userPaused;
+    setMotionUI(userPaused);
+  });
+
+  /* ---------- views ---------- */
+  function setView(orbit){
+    document.body.classList.toggle("orbit-active", orbit);
+    if (!orbit){
+      closeDetail();
+      var blocks = $$("#gridView .side, #gridView .gsection, #gridView .gfooter");
+      blocks.forEach(function(el,i){
+        el.classList.remove("view-enter","enter-on");
+        el.style.transition = ""; el.style.opacity = ""; el.style.transform = "";
+        el.style.setProperty("--d",(i*0.06).toFixed(2)+"s");
+      });
+      void $("#gridView").offsetWidth;
+      blocks.forEach(function(el){ el.classList.add("view-enter"); });
+      setTimeout(function(){ blocks.forEach(function(el){ el.classList.add("enter-on"); }); }, 30);
+      setTimeout(function(){
+        blocks.forEach(function(el){
+          el.style.transition = "none"; el.style.opacity = "1"; el.style.transform = "none";
+        });
+      }, 1000);
+    }
+    window.scrollTo(0,0);
+  }
+  $("#btnGrid").addEventListener("click", function(){ setView(false); });
+  $("#btnOrbit").addEventListener("click", function(){ setView(true); });
+  document.body.classList.add("orbit-active");
+
+  /* ---------- detail panel ---------- */
+  var lastFocus = null, currentImg = "", currentCap = "";
+  function renderDetail(){
+    if (personalOpen){
+      $("#dTitle").textContent = "Maxwell DING";
+      $("#dPeriod").hidden = true;
+      $("#dTags").replaceChildren();
+      $("#dDesc").hidden = true;
+      $("#dThumb").hidden = true;
+      $("#dZoom").hidden = true;
+      $("#dPersonal").hidden = false;
+      fillPersonal();
+      return;
+    }
+    var p = PROJECTS[opened];
+    $("#dTitle").textContent = T(p.name);
+    $("#dPeriod").hidden = false;
+    $("#dPeriod").textContent = T(p.period);
+    $("#dDesc").textContent = T(p.desc);
+    $("#dDesc").hidden = false;
+    $("#dTags").replaceChildren.apply($("#dTags"), p.tags.map(function(t){
+      var s = document.createElement("span"); s.className="tag"; s.textContent = T(t); return s;
+    }));
+    currentImg = p.img; currentCap = T(p.name);
+    $("#dImg").src = p.img; $("#dImg").alt = T(p.name);
+    $("#dThumb").hidden = false; $("#dZoom").hidden = false; $("#dPersonal").hidden = true;
+  }
+  function placePanel(){
+    var d = $("#detail");
+    d.classList.remove("on-left","on-right");
+    if (personalOpen){ d.classList.add("on-left"); return; }
+    var x = opened >= 0 ? pos(ORBITS[opened]).x : CX;
+    d.classList.add(x > CX ? "on-left" : "on-right");
+  }
+  function openProject(i, byPointer){
+    opened = i; personalOpen = false; setHover(i, false);
+    ORBITS.forEach(function(o,j){ o.el.classList.toggle("is-open", j===i); });
+    placePanel(); renderDetail();
+    $("#detail").hidden = false;
+    clearLabels();
+    lastFocus = byPointer ? null : document.activeElement;
+    $("#dClose").focus();
+  }
+  function openPersonal(byPointer){
+    opened = -1; personalOpen = true; setHover(-1);
+    ORBITS.forEach(function(o){ o.el.classList.remove("is-open"); });
+    placePanel(); renderDetail();
+    $("#detail").hidden = false;
+    clearLabels();
+    lastFocus = byPointer ? null : document.activeElement;
+    $("#dClose").focus();
+  }
+  function closeDetail(){
+    $("#detail").hidden = true;
+    clearLabels();
+    ORBITS.forEach(function(o){ o.el.classList.remove("is-open"); });
+    opened = -1; personalOpen = false; setHover(-1);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+    else if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
+  $("#dClose").addEventListener("click", closeDetail);
+  $("#dZoom").addEventListener("click", function(e){ e.preventDefault(); openLightbox(currentImg, currentCap); });
+  $("#dThumb").addEventListener("click", function(){ openLightbox(currentImg, currentCap); });
+  $("#sun").addEventListener("click", function(){ openPersonal(true); });
+  $("#sun").addEventListener("keydown", function(ev){
+    if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); openPersonal(false); }
+  });
+
+  /* ---------- project list ---------- */
+  function openList(){
+    modalPause = true;
+    document.body.classList.add("motion-paused");
+    renderList();
+    $("#listModal").hidden = false;
+    clearLabels();
+    lastFocus = document.activeElement;
+    $("#listClose").focus();
+  }
+  function closeList(){
+    $("#listModal").hidden = true;
+    modalPause = false;
+    if (!userPaused) document.body.classList.remove("motion-paused");
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  $("#btnList").addEventListener("click", openList);
+  $("#listClose").addEventListener("click", closeList);
+  $("#listProfile").addEventListener("click", function(){
+    closeList(); setView(true); openPersonal(true);
+  });
+  $("#listPubs").addEventListener("click", function(){
+    closeList(); setView(true); openPersonal(true);
+    var d = $("#personalBody details"); if (d) d.open = true;
+  });
+  $("#listModal").addEventListener("click", function(e){ if (e.target === this) closeList(); });
+
+  /* ---------- lightbox (shared by both views) ---------- */
+  function openLightbox(src, cap){
+    $("#lbImg").src = src; $("#lbImg").alt = cap; $("#lbCap").textContent = cap;
+    $("#lightbox").hidden = false; $("#lbClose").focus();
+  }
+  function closeLightbox(){
+    $("#lightbox").hidden = true; $("#lbImg").removeAttribute("src");
+  }
+  $("#lbClose").addEventListener("click", closeLightbox);
+  $("#lightbox").addEventListener("click", function(e){ if (e.target === this || e.target === $("#lbImg")) closeLightbox(); });
+  $$("#gridView .proj-media").forEach(function(b){
+    b.addEventListener("click", function(){
+      var card = b.closest(".proj"), img = b.querySelector("img");
+      var nm = card.querySelector(".proj-name");
+      openLightbox(img.src, lang === "en" ? nm.dataset.en : nm.dataset.zh);
+    });
+  });
+
+  document.addEventListener("keydown", function(e){
+    if (e.key !== "Escape") return;
+    if (!$("#lightbox").hidden) closeLightbox();
+    else if (!$("#listModal").hidden) closeList();
+    else if (!$("#detail").hidden) closeDetail();
+  });
+
+  /* first-screen staggered entrance + forced settle (robust when transitions are throttled) */
+  (function(){
+    var nodes = $$(".enter-op,.enter-up");
+    void document.body.offsetWidth;
+    setTimeout(function(){ nodes.forEach(function(el){ el.classList.add("enter-on"); }); }, 30);
+    setTimeout(function(){
+      nodes.forEach(function(el){
+        el.style.transition = "none";
+        el.style.opacity = "1";
+        if (el.classList.contains("enter-up")) el.style.transform = "none";
+      });
+    }, 1400);
+  })();
+
+  $("#year").textContent = new Date().getFullYear();
+  applyLang();
+})();
+</script>
+</body>
+</html>
