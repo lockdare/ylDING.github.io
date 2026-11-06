@@ -55,7 +55,7 @@ body.js .enter-up.enter-on,body.js .view-enter.enter-on{transform:none}
 .planet.g-research .pbody{fill:var(--planet-research)}
 .planet.g-other .pbody{fill:var(--planet-other)}
 .planet.show-label .pbody,.planet.is-open .pbody{fill:var(--accent)}
-.planet .pnum{fill:var(--on-accent);font-family:var(--sans);font-weight:500;text-anchor:middle;dominant-baseline:central;pointer-events:none;user-select:none}
+.planet .pnum{fill:var(--on-accent);font-family:var(--sans);font-weight:600;text-anchor:middle;dominant-baseline:central;pointer-events:none;user-select:none}
 .planet .phit{fill:transparent;pointer-events:all}
 .planet .pbg{fill:var(--panel);opacity:0;visibility:hidden;pointer-events:all}
 .planet .pname{fill:var(--label);font-family:var(--sans);font-weight:500;dominant-baseline:central;opacity:0;visibility:hidden}
@@ -282,9 +282,9 @@ body.js .grid-top{display:flex}
       <svg class="ic-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5 13 8l-8.5 5.5z"/></svg>
       <span class="pill-label" id="pauseLabel" data-en="Pause motion">暂停动画</span>
     </button>
-    <button type="button" class="pill-btn" id="btnGrid" aria-label="平铺显示 / Tile view">
+    <button type="button" class="pill-btn" id="btnGrid" aria-label="直观显示 / Tile view">
       <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
-      <span class="pill-label" data-en="Tile view">平铺显示</span>
+      <span class="pill-label" data-en="Tile view">直观显示</span>
     </button>
   </div>
 </section>
@@ -371,7 +371,7 @@ body.js .grid-top{display:flex}
 
       <h3 class="gtitle">Open Source Projects</h3>
       <div class="grid grid-featured">
-        <article class="proj proj-featured" data-img="assets/open_source1.png" data-group="open">
+        <article class="proj proj-featured" data-img="assets/open_source1.png" data-group="open" data-planet="插件" data-planet-en="Plugin">
           <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/open_source1.png" alt="卡片画布插件界面" loading="lazy" decoding="async"></button>
           <div class="proj-body">
             <div class="proj-head"><h4 class="proj-name" data-en="Card Canvas (Author)">卡片画布（作者）</h4><span class="proj-period">v0.9.0</span></div>
@@ -384,7 +384,7 @@ body.js .grid-top{display:flex}
 
       <h3 class="gtitle">Research Projects</h3>
       <div class="grid grid-2">
-        <article class="proj" data-img="assets/rp1.jpg" data-group="research">
+        <article class="proj" data-img="assets/rp1.jpg" data-group="research" data-planet="交互" data-planet-en="Effect">
           <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/rp1.jpg" alt="基于特效与振动触觉的功夫学习系统" loading="lazy" decoding="async"></button>
           <div class="proj-body">
             <div class="proj-head"><h4 class="proj-name" data-en="Kung Fu Motor Learning with Visual Effects and Vibrotactile Feedback">基于特效与振动触觉的功夫学习系统</h4><span class="proj-period" data-en="Jun – Oct 2024">2024.06 – 2024.10</span></div>
@@ -392,7 +392,7 @@ body.js .grid-top{display:flex}
             <div class="proj-tags"><span data-en="Multimodal">多模态</span><span data-en="Visual effects">动效</span><span data-en="Vibrotactile">振动触觉</span><span data-en="Motor learning">动作学习</span></div>
           </div>
         </article>
-        <article class="proj" data-img="assets/rp2.jpg" data-group="research">
+        <article class="proj" data-img="assets/rp2.jpg" data-group="research" data-planet="安抚" data-planet-en="Comfort">
           <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/rp2.jpg" alt="心理健康与情感机器人设计" loading="lazy" decoding="async"></button>
           <div class="proj-body">
             <div class="proj-head"><h4 class="proj-name" data-en="Affective Robot Design for Mental Well-being">心理健康与情感机器人设计</h4><span class="proj-period" data-en="Jun – Oct 2024">2024.06 – 2024.10</span></div>
@@ -400,7 +400,7 @@ body.js .grid-top{display:flex}
             <div class="proj-tags"><span data-en="Emotional comfort">情感安抚</span><span data-en="Emotional connection">情感连接</span><span data-en="Mental health">心理健康</span><span data-en="Robotics">机器人</span></div>
           </div>
         </article>
-        <article class="proj" data-img="assets/rp3.jpg" data-group="research">
+        <article class="proj" data-img="assets/rp3.jpg" data-group="research" data-planet="交互" data-planet-en="Haptic">
           <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/rp3.jpg" alt="基于振动触觉的动作学习交互穿戴设计" loading="lazy" decoding="async"></button>
           <div class="proj-body">
             <div class="proj-head"><h4 class="proj-name" data-en="Wearable Vibrotactile Guidance for Motor Learning">基于振动触觉的动作学习交互穿戴设计</h4><span class="proj-period" data-en="Sep 2025 – Jun 2026">2025.09 – 2026.06</span></div>
@@ -408,7 +408,7 @@ body.js .grid-top{display:flex}
             <div class="proj-tags"><span data-en="Multimodal">多模态</span><span data-en="Older adults">老年人</span><span data-en="Vibrotactile">振动触觉</span><span data-en="Motor learning">动作学习</span></div>
           </div>
         </article>
-        <article class="proj" data-img="assets/rp4.jpg" data-group="research">
+        <article class="proj" data-img="assets/rp4.jpg" data-group="research" data-planet="人因" data-planet-en="Ergo-">
           <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/rp4.jpg" alt="老年人皮肤振动感知能力及识别能力研究" loading="lazy" decoding="async"></button>
           <div class="proj-body">
             <div class="proj-head"><h4 class="proj-name" data-en="Vibrotactile Perception and Recognition in Older Adults">老年人皮肤振动感知能力及识别能力研究</h4><span class="proj-period" data-en="Sep 2023 – Jul 2025">2023.09 – 2025.07</span></div>
@@ -420,7 +420,7 @@ body.js .grid-top{display:flex}
 
       <h3 class="gtitle">Other Projects</h3>
       <div class="grid grid-3">
-        <article class="proj" data-img="assets/op1.png" data-group="other">
+        <article class="proj" data-img="assets/op1.png" data-group="other" data-planet="Todo" data-planet-en="Todo">
           <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/op1.png" alt="基于激励理论的应用系统设计开发" loading="lazy" decoding="async"></button>
           <div class="proj-body">
             <div class="proj-head"><h4 class="proj-name" data-en="Application Design Based on Motivation Theory">基于激励理论的应用系统设计开发</h4><span class="proj-period" data-en="Oct 2024 – Jun 2025">2024.10 – 2025.06</span></div>
@@ -428,7 +428,7 @@ body.js .grid-top{display:flex}
             <div class="proj-tags"><span data-en="Interface design">界面设计</span><span data-en="Motivation theory">激励理论</span><span data-en="Mobile app">移动应用</span></div>
           </div>
         </article>
-        <article class="proj" data-img="assets/op2.jpg" data-group="other">
+        <article class="proj" data-img="assets/op2.jpg" data-group="other" data-planet="化妆" data-planet-en="Makeup">
           <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/op2.jpg" alt="AI 驱动的皮肤保护与化妆辅助" loading="lazy" decoding="async"></button>
           <div class="proj-body">
             <div class="proj-head"><h4 class="proj-name" data-en="AI-driven Skin Protection and Makeup Assistance">AI 驱动的皮肤保护与化妆辅助</h4><span class="proj-period" data-en="Jul – Aug 2025">2025.07 – 2025.08</span></div>
@@ -436,7 +436,7 @@ body.js .grid-top{display:flex}
             <div class="proj-tags"><span data-en="UI design">UI 设计</span><span data-en="Frontend">前端开发</span><span data-en="Embedded systems">嵌入式</span><span data-en="Face recognition">面部识别</span><span data-en="Generative models">生成式模型</span><span data-en="LLMs">大语言模型</span></div>
           </div>
         </article>
-        <article class="proj" data-img="assets/op3.jpg" data-group="other">
+        <article class="proj" data-img="assets/op3.jpg" data-group="other" data-planet="Bot" data-planet-en="Bot">
           <button type="button" class="proj-media" aria-label="放大查看图片 / Zoom image"><img src="assets/op3.jpg" alt="便携式陪伴机器人设计开发" loading="lazy" decoding="async"></button>
           <div class="proj-body">
             <div class="proj-head"><h4 class="proj-name" data-en="Portable Companion Robot">便携式陪伴机器人设计开发</h4><span class="proj-period" data-en="Mar – Jun 2024">2024.03 – 2024.06</span></div>
@@ -482,6 +482,7 @@ body.js .grid-top{display:flex}
   var PROJECTS = CARDS.map(function(c,i){
     return {
       n: ("0"+(i+1)).slice(-2),
+      planet: { zh: (c.dataset.planet || "").trim(), en: (c.dataset.planetEn || c.dataset.planet || "").trim() },
       name: bi(c.querySelector(".proj-name")),
       period: bi(c.querySelector(".proj-period")),
       desc: bi(c.querySelector(".proj-desc")),
@@ -493,9 +494,13 @@ body.js .grid-top{display:flex}
   var GROUPS = { open:"Open Source Projects", research:"Research Projects", other:"Other Projects" };
   var GROUPS_ZH = { open:"开源项目", research:"研究项目", other:"其他项目" };
 
-  /* ---------- language ---------- */
-  var lang = "zh";
-  try { lang = localStorage.getItem("orbit-lang") || (navigator.language||"zh").toLowerCase().indexOf("zh")===0 ? "zh" : "en"; } catch(e){}
+  /* ---------- language: saved choice first, then browser ---------- */
+  var lang = (function(){
+    var saved = "";
+    try { saved = localStorage.getItem("orbit-lang") || ""; } catch(e){}
+    if (saved === "zh" || saved === "en") return saved;
+    return ((navigator.language || "zh").toLowerCase().indexOf("zh") === 0) ? "zh" : "en";
+  })();
   function T(o){ return lang === "en" ? o.en : o.zh; }
   function renderList(){
     var out = "", last = "";
@@ -525,6 +530,24 @@ body.js .grid-top{display:flex}
     var s = ((lang === "en") ? p.name.en : p.name.zh).trim();
     return s ? s.charAt(0).toUpperCase() : "·";
   }
+  /* face label: the short "planet:" category tag from the md, else the first character */
+  function planetLabel(p){
+    var s = ((lang === "en") ? p.planet.en : p.planet.zh).trim();
+    return s || initial(p);
+  }
+  /* shrink the face label just enough to stay comfortably inside the sphere */
+  function fitNum(el, r, txt){
+    var cjk = /[\u2e80-\u9fff\uff00-\uffef]/.test(txt);
+    var base = (txt.length <= 1 ? 12.4 : 9.9) * PS;
+    var unit = cjk ? 1 : 0.58;
+    var maxW = r * 2 * 0.7;
+    var w = txt.length * base * unit;
+    var fs = w > maxW ? base * maxW / w : base;
+    el.setAttribute("font-size", fs.toFixed(1));
+    el.setAttribute("letter-spacing", (cjk && txt.length > 1) ? "-0.02em" : "0");
+    el.setAttribute("x", "0");
+    el.setAttribute("y", "0");
+  }
   function layoutLabel(o, above){
     var txt = o.name.textContent || "";
     var fs = 14 * PS;
@@ -550,7 +573,9 @@ body.js .grid-top{display:flex}
     });
     if (ORBITS && ORBITS[0] && ORBITS[0].num){
       ORBITS.forEach(function(o,i){
-        o.num.textContent = initial(PROJECTS[i]);
+        var t = planetLabel(PROJECTS[i]);
+        o.num.textContent = t;
+        fitNum(o.num, o.r * PS, t);
         o.name.textContent = T(PROJECTS[i].name);
         o.above = null;
       });
@@ -685,8 +710,10 @@ body.js .grid-top{display:flex}
     body.setAttribute("class","pbody"); body.setAttribute("r",(o.r*PS).toFixed(1));
 
     var num = document.createElementNS(SVGNS,"text");
-    num.setAttribute("class","pnum"); num.setAttribute("font-size",(14*PS).toFixed(1));
-    num.textContent = initial(PROJECTS[i]);
+    num.setAttribute("class","pnum");
+    var faceLabel = planetLabel(PROJECTS[i]);
+    num.textContent = faceLabel;
+    fitNum(num, o.r * PS, faceLabel);
 
     var name = document.createElementNS(SVGNS,"text");
     name.setAttribute("class","pname"); name.setAttribute("font-size",(14*PS).toFixed(1));
